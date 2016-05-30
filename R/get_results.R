@@ -55,7 +55,16 @@ get_round_results <- function(round, season){
 #' @export
 #'
 get_season_rounds <- function(season){
-  rounds <- 2:40
+  # determine number of rounds in the season
+  url <- paste0("http://spellingbee.com/public/results/", season, "/round_results")
+  html <- xml2::read_html(url)
+  rounds <- rvest::html_nodes(html, "td:nth-child(1)") %>%
+    rvest::html_text() %>%
+    tidyr::extract_numeric(.) %>%
+    na.omit(.) %>%
+    # remove first round because it is preliminaries - no actual results
+    setdiff(., 1)
+
   results <- lapply(rounds, function(x) get_round_results(season = season, round = x)) %>%
     dplyr::bind_rows(.)
 
