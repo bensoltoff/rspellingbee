@@ -1,9 +1,9 @@
 Package: rspellingbee
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Scripps National Spelling Bee Analytics
 Version: 0.1.0
-Author: Who wrote it
-Maintainer: Who to complain to <yourfault@somewhere.net>
-Description: More about what it does (maybe more than one line)
-License: What license is it under?
+Author: Benjamin Soltoff
+Maintainer: Benjamin Soltoff <ben@bensoltoff.com>
+Description: R pacakge to scrape spelling bee results from the web, tidy the data, and conduct basic analysis
+License: MIT License
 LazyData: TRUE
