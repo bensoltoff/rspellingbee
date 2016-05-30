@@ -13,5 +13,9 @@ Imports: dplyr,
     rvest,
     magrittr,
     feather,
-    xml2
+    xml2,
+    datasets,
+    gender,
+    stringr,
+    wru
 RoxygenNote: 5.0.1
