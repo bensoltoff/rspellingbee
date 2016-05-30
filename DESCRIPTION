@@ -19,3 +19,4 @@ Imports: dplyr,
     stringr,
     wru
 RoxygenNote: 5.0.1
+Depends: wru
