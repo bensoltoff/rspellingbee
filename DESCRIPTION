@@ -2,8 +2,16 @@ Package: rspellingbee
 Type: Package
 Title: Scripps National Spelling Bee Analytics
 Version: 0.1.0
-Author: Benjamin Soltoff
+Authors@R: person("Benjamin", "Soltoff", email = "ben@bensoltoff.com",
+  role = c("aut", "cre"))
 Maintainer: Benjamin Soltoff <ben@bensoltoff.com>
 Description: R pacakge to scrape spelling bee results from the web, tidy the data, and conduct basic analysis
 License: MIT License
 LazyData: TRUE
+Imports: dplyr,
+    tidyr,
+    rvest,
+    magrittr,
+    feather,
+    xml2
+RoxygenNote: 5.0.1
