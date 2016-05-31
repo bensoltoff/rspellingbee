@@ -36,7 +36,9 @@ get_round_results <- function(round, season){
            word_given = `Spelling Given`,
            error = Error) %>%
     dplyr::mutate(error = error == "E",
-           id_round = row_number())
+           id_round = row_number(),
+           word_correct = stringr::str_trim(word_correct),
+           word_given = stringr::str_trim(word_given))
 
   # add round and year info
   results %<>%
