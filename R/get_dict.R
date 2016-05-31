@@ -36,9 +36,9 @@ get_dict <- function(word){
 
   # combine info into data frame
   word_info <- dplyr::data_frame(word = word,
-                    type = type_speech,
-                    definition = definition,
-                    origin = origin)
+                    type = ifelse(length(type_speech) != 0, type_speech, NA),
+                    definition = ifelse(length(definition) != 0, definition, NA),
+                    origin = ifelse(length(origin) != 0, origin, NA))
 
   return(word_info)
 }
@@ -62,9 +62,16 @@ get_words <- function(results){
   return(words)
 }
 
+#' Get dictionary info for a list of competition words
+#'
+#' @param words A vector produced by [get_words]
+#'
+#' @return
+#' @export
+#'
+#' @examples
 get_words_dict <- function(words){
-  words_dict <- lapply(words, get_dict) %>%
-    dplyr::bind_rows(.)
+  words_dict <- purrr::map_df(words, get_dict)
 
   return(words_dict)
 }
