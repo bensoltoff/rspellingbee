@@ -17,6 +17,7 @@ Imports: dplyr,
     datasets,
     gender,
     stringr,
-    wru
+    wru,
+    httr
 RoxygenNote: 5.0.1
 Depends: wru
