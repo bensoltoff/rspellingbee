@@ -26,7 +26,7 @@ get_round_results <- function(round, season){
     tbl_df
 
   # standardize column names before fixing
-  if(season == 2011 & (round == 2 | round == 3)){
+  if((season == 2011 | season == 2010) & (round == 2 | round == 3)){
     results %<>%
       dplyr::rename(Error = `EarnedBonus?`)
   }
@@ -65,7 +65,7 @@ round_results_table <- function(url, season){
     data <- tryCatch(page %>%
                        rvest::html_node("table"),
                      error = function(e) NULL)
-  } else if(season == 2011){
+  } else if(season == 2011 | season == 2010){
     data <- tryCatch(page %>%
                        rvest::html_nodes("table") %>%
                        magrittr::extract2(4),
@@ -103,7 +103,7 @@ get_season_rounds <- function(season){
 season_rounds <- function(url, season){
   if(season >= 2012){
     rounds <- rvest::html_nodes(html, "td:nth-child(1)")
-  } else if(season == 2011){
+  } else if(season == 2011 | season == 2010){
     rounds <- rvest::html_nodes(html, "#copyBody td:nth-child(1)")
   }
 
