@@ -85,14 +85,7 @@ round_results_table <- function(url, season){
 #'
 get_season_rounds <- function(season){
   # determine number of rounds in the season
-  url <- season_url(season)
-  html <- xml2::read_html(url)
-  rounds <- season_rounds(url, season)
-
-  # correction for 2011
-  if(season == 2011){
-    rounds <- 2:20
-  }
+  rounds <- season_rounds(season)
 
   results <- lapply(rounds, function(x) get_round_results(season = season, round = x)) %>%
     dplyr::bind_rows(.)
@@ -100,7 +93,19 @@ get_season_rounds <- function(season){
   return(results)
 }
 
-season_rounds <- function(url, season){
+#' Determine which rounds were actually played in a given season.
+#'
+#' @param url
+#' @param season
+#'
+#' @return
+#' @export
+#'
+#' @examples
+season_rounds <- function(season){
+  url <- season_url(season)
+  html <- xml2::read_html(url)
+
   if(season >= 2012){
     rounds <- rvest::html_nodes(html, "td:nth-child(1)")
   } else if(season_format(season) == "B"){
@@ -113,6 +118,11 @@ season_rounds <- function(url, season){
     na.omit(.) %>%
     # remove first round because it is preliminaries - no actual results
     setdiff(., 1)
+
+  # correction for 2011
+  if(season == 2011){
+    rounds <- 2:20
+  }
 
   return(rounds)
 }
