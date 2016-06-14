@@ -14,18 +14,22 @@
 #'
 get_round_results <- function(round, season){
   # get table from page
-  url <- paste0("http://spellingbee.com/public/results/", season, "/round_results/summary/", round)
+  url <- paste0(season_url(season), "/summary/", round)
 
   # if no table returns, then no data available - exit
-  data <- tryCatch(xml2::read_html(url) %>%
-                     rvest::html_node("table"),
-                   error = function(e) NULL)
+  data <- round_results_table(url, season)
   if(is.null(data)) return(NULL)
 
   # convert to table
   results <- data %>%
-    rvest::html_table() %>%
+    rvest::html_table(header = TRUE) %>%
     tbl_df
+
+  # standardize column names before fixing
+  if(season == 2011 & (round == 2 | round == 3)){
+    results %<>%
+      dplyr::rename(Error = `EarnedBonus?`)
+  }
 
   # fix column names
   results %<>%
@@ -47,6 +51,29 @@ get_round_results <- function(round, season){
   return(results)
 }
 
+#' Retrieve round results table
+#'
+#' @param url
+#' @param season
+#'
+#' @return
+#'
+#' @examples
+round_results_table <- function(url, season){
+  page <- xml2::read_html(url)
+  if(season >= 2012){
+    data <- tryCatch(page %>%
+                       rvest::html_node("table"),
+                     error = function(e) NULL)
+  } else if(season == 2011){
+    data <- tryCatch(page %>%
+                       rvest::html_nodes("table") %>%
+                       magrittr::extract2(4),
+                     error = function(e) NULL)
+  }
+
+  return(data)
+}
 #' Get season rounds
 #'
 #' Get all rounds in a single competition
@@ -58,19 +85,36 @@ get_round_results <- function(round, season){
 #'
 get_season_rounds <- function(season){
   # determine number of rounds in the season
-  url <- paste0("http://spellingbee.com/public/results/", season, "/round_results")
+  url <- season_url(season)
   html <- xml2::read_html(url)
-  rounds <- rvest::html_nodes(html, "td:nth-child(1)") %>%
+  rounds <- season_rounds(url, season)
+
+  # correction for 2011
+  if(season == 2011){
+    rounds <- 2:20
+  }
+
+  results <- lapply(rounds, function(x) get_round_results(season = season, round = x)) %>%
+    dplyr::bind_rows(.)
+
+  return(results)
+}
+
+season_rounds <- function(url, season){
+  if(season >= 2012){
+    rounds <- rvest::html_nodes(html, "td:nth-child(1)")
+  } else if(season == 2011){
+    rounds <- rvest::html_nodes(html, "#copyBody td:nth-child(1)")
+  }
+
+  rounds %<>%
     rvest::html_text() %>%
     tidyr::extract_numeric(.) %>%
     na.omit(.) %>%
     # remove first round because it is preliminaries - no actual results
     setdiff(., 1)
 
-  results <- lapply(rounds, function(x) get_round_results(season = season, round = x)) %>%
-    dplyr::bind_rows(.)
-
-  return(results)
+  return(rounds)
 }
 
 #' Create season url
