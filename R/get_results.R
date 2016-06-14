@@ -13,37 +13,52 @@
 #' @importFrom magrittr "%<>%"
 #'
 get_round_results <- function(round, season){
-  # get table from page
-  url <- paste0(season_url(season), "/summary/", round)
-
   # if no table returns, then no data available - exit
-  data <- round_results_table(url, season)
+  data <- round_results_table(round, season)
   if(is.null(data)) return(NULL)
 
   # convert to table
-  results <- data %>%
-    rvest::html_table(header = TRUE) %>%
-    dplyr::tbl_df()
+  if(season_format(season) == "D" | season_format(season) == "D2"){
+    results <- data %>%
+      rvest::html_table() %>%
+      as.data.frame %>%
+      .[2:(nrow(.)-1),] %>%
+      dplyr::tbl_df()%>%
+      dplyr::slice(2:n())
+  } else {
+    results <- data %>%
+      rvest::html_table(header = TRUE) %>%
+      dplyr::tbl_df()
+  }
 
   # standardize column names before fixing
   if((season_format(season) == "B" & (round == 2 | round == 3)) |
      (season_format(season) == "C" & round == 2)){
     results %<>%
       dplyr::rename(Error = `EarnedBonus?`)
+  } else if(season_format(season) == "D" | season_format(season) == "D2"){
+    results %<>%
+      dplyr::rename(`No.` = X1,
+                    `Speller's Name` = X2,
+                    `Speller's Sponsor` = X3,
+                    `Correct Spelling` = X4,
+                    `Spelling Given` = X5,
+                    Error = X6)
   }
 
   # fix column names
   results %<>%
     dplyr::rename(id = `No.`,
-           speller = `Speller's Name`,
-           sponsor = `Speller's Sponsor`,
-           word_correct = `Correct Spelling`,
-           word_given = `Spelling Given`,
-           error = Error) %>%
-    dplyr::mutate(error = error == "E",
-           id_round = row_number(),
-           word_correct = stringr::str_trim(word_correct),
-           word_given = stringr::str_trim(word_given))
+                  speller = `Speller's Name`,
+                  sponsor = `Speller's Sponsor`,
+                  word_correct = `Correct Spelling`,
+                  word_given = `Spelling Given`,
+                  error = Error) %>%
+    dplyr::mutate(id = tidyr::extract_numeric(id),
+                  error = error == "E",
+                  id_round = row_number(),
+                  word_correct = stringr::str_trim(word_correct),
+                  word_given = stringr::str_trim(word_given))
 
   # add round and year info
   results %<>%
@@ -60,8 +75,23 @@ get_round_results <- function(round, season){
 #' @return
 #'
 #' @examples
-round_results_table <- function(url, season){
+round_results_table <- function(round, season){
+  # build url for round result page
+  if(season_format(season) == "A" |
+     season_format(season) == "B" |
+     season_format(season) == "C"){
+    url <- paste0(season_url(season), "/summary/", round)
+  } else if(season_format(season) == "D"){
+    url <- paste0("https://web.archive.org/web/20070809093424/http://www.spellingbee.com/",
+                  substr(season, 3, 4), "bee/rounds/Round",
+                  formatC(round, width = 2, format = "d", flag = "0"), ".htm")
+  } else if(season_format(season) == "D2"){
+    url <- paste0("https://web.archive.org/web/20060721121245/http://www.spellingbee.com/",
+                  substr(season, 3, 4), "bee/rounds/Round",
+                  formatC(round, width = 2, format = "d", flag = "0"), ".htm")
+  }
   page <- xml2::read_html(url)
+
   if(season_format(season) == "A"){
     data <- tryCatch(page %>%
                        rvest::html_node("table"),
@@ -75,6 +105,10 @@ round_results_table <- function(url, season){
     data <- tryCatch(page %>%
                        rvest::html_nodes("table") %>%
                        magrittr::extract2(5),
+                     error = function(e) NULL)
+  } else if(season_format(season) == "D" | season_format(season) == "D2"){
+    data <- tryCatch(page %>%
+                       rvest::html_node("center table"),
                      error = function(e) NULL)
   }
 
@@ -118,6 +152,10 @@ season_rounds <- function(season){
     rounds <- rvest::html_nodes(html, "#copyBody td:nth-child(1)")
   } else if(season_format(season) == "C"){
     rounds <- rvest::html_nodes(html, ".b td:nth-child(1)")
+  } else if(season_format(season) == "D"){
+    rounds <- rvest::html_nodes(html, "b")
+  } else if(season_format(season) == "D2"){
+    rounds <- rvest::html_nodes(html, "td b")
   }
 
   rounds %<>%
@@ -202,6 +240,8 @@ season_format <- function(season){
   if(season >= 2012) return("A")
   else if(season < 2012 & season >= 2009) return("B")
   else if(season == 2008) return("C")
+  else if(season == 2007) return("D")
+  else if(season == 2006) return("D2")
 }
 
 #' Get seasons
