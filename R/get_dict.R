@@ -5,10 +5,20 @@
 #' @return
 #' @export
 #'
-get_dict <- function(word){
+get_dict <- function(word, delay = FALSE){
   url <- paste0("http://www.merriam-webster.com/dictionary/", word)
   ua_string <- "Googlebot/2.1 (+http://www.google.com/bot.html)"
   html <- rvest::html_session(url, httr::user_agent(ua_string))
+
+  # if page doesn't load, skip
+  if(httr::status_code(html) != 200){
+    word_info <- dplyr::data_frame(word = word,
+                                   type = NA,
+                                   definition = NA,
+                                   origin = NA)
+
+    return(word_info)
+  }
 
   type_speech <- html %>%
     rvest::html_nodes(".main-attr em") %>%
@@ -39,6 +49,9 @@ get_dict <- function(word){
                     type = ifelse(length(type_speech) != 0, type_speech, NA),
                     definition = ifelse(length(definition) != 0, definition, NA),
                     origin = ifelse(length(origin) != 0, origin, NA))
+
+  # add delay to slow down queries to website - prevents block
+  if(delay) Sys.sleep(5)
 
   return(word_info)
 }
@@ -71,7 +84,7 @@ get_words <- function(results){
 #'
 #' @examples
 get_words_dict <- function(words){
-  words_dict <- purrr::map_df(words, get_dict)
+  words_dict <- purrr::map_df(words, get_dict, delay = TRUE)
 
   return(words_dict)
 }
