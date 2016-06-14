@@ -23,10 +23,11 @@ get_round_results <- function(round, season){
   # convert to table
   results <- data %>%
     rvest::html_table(header = TRUE) %>%
-    tbl_df
+    dplyr::tbl_df()
 
   # standardize column names before fixing
-  if(season_format(season) == "B" & (round == 2 | round == 3)){
+  if((season_format(season) == "B" & (round == 2 | round == 3)) |
+     (season_format(season) == "C" & round == 2)){
     results %<>%
       dplyr::rename(Error = `EarnedBonus?`)
   }
@@ -61,7 +62,7 @@ get_round_results <- function(round, season){
 #' @examples
 round_results_table <- function(url, season){
   page <- xml2::read_html(url)
-  if(season >= 2012){
+  if(season_format(season) == "A"){
     data <- tryCatch(page %>%
                        rvest::html_node("table"),
                      error = function(e) NULL)
@@ -69,6 +70,11 @@ round_results_table <- function(url, season){
     data <- tryCatch(page %>%
                        rvest::html_nodes("table") %>%
                        magrittr::extract2(4),
+                     error = function(e) NULL)
+  } else if(season_format(season) == "C"){
+    data <- tryCatch(page %>%
+                       rvest::html_nodes("table") %>%
+                       magrittr::extract2(5),
                      error = function(e) NULL)
   }
 
@@ -106,10 +112,12 @@ season_rounds <- function(season){
   url <- season_url(season)
   html <- xml2::read_html(url)
 
-  if(season >= 2012){
+  if(season_format(season) == "A"){
     rounds <- rvest::html_nodes(html, "td:nth-child(1)")
   } else if(season_format(season) == "B"){
     rounds <- rvest::html_nodes(html, "#copyBody td:nth-child(1)")
+  } else if(season_format(season) == "C"){
+    rounds <- rvest::html_nodes(html, ".b td:nth-child(1)")
   }
 
   rounds %<>%
@@ -119,9 +127,11 @@ season_rounds <- function(season){
     # remove first round because it is preliminaries - no actual results
     setdiff(., 1)
 
-  # correction for 2011
+  # correction for various seasons
   if(season == 2011){
     rounds <- 2:20
+  } else if(season == 2008){
+    rounds <- 2:16
   }
 
   return(rounds)
@@ -190,7 +200,8 @@ season_url <- function(season){
 #' @examples
 season_format <- function(season){
   if(season >= 2012) return("A")
-  else if(season < 2012 & season >- 2009) return("B")
+  else if(season < 2012 & season >= 2009) return("B")
+  else if(season == 2008) return("C")
 }
 
 #' Get seasons
