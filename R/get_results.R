@@ -23,7 +23,13 @@ get_round_results <- function(round, season){
       rvest::html_table() %>%
       as.data.frame %>%
       .[2:(nrow(.)-1),] %>%
-      dplyr::tbl_df()%>%
+      dplyr::tbl_df() %>%
+      dplyr::slice(2:n())
+  } else if(season_format(season) == "E"){
+    results <- data %>%
+      rvest::html_table() %>%
+      as.data.frame %>%
+      dplyr::tbl_df() %>%
       dplyr::slice(2:n())
   } else {
     results <- data %>%
@@ -36,7 +42,7 @@ get_round_results <- function(round, season){
      (season_format(season) == "C" & round == 2)){
     results %<>%
       dplyr::rename(Error = `EarnedBonus?`)
-  } else if(season_format(season) == "D" | season_format(season) == "D2"){
+  } else if(season_format(season) == "D" | season_format(season) == "D2" | season_format(season) == "E"){
     results %<>%
       dplyr::rename(`No.` = X1,
                     `Speller's Name` = X2,
@@ -89,6 +95,10 @@ round_results_table <- function(round, season){
     url <- paste0("https://web.archive.org/web/20060721121245/http://www.spellingbee.com/",
                   substr(season, 3, 4), "bee/rounds/Round",
                   formatC(round, width = 2, format = "d", flag = "0"), ".htm")
+  } else if(season_format(season) == "E"){
+    url <- paste0("https://web.archive.org/web/20050831002454/http://www.spellingbee.com/",
+                  substr(season, 3, 4), "bee/rounds/Round",
+                  formatC(round, width = 2, format = "d", flag = "0"), ".htm")
   }
   page <- xml2::read_html(url)
 
@@ -106,7 +116,7 @@ round_results_table <- function(round, season){
                        rvest::html_nodes("table") %>%
                        magrittr::extract2(5),
                      error = function(e) NULL)
-  } else if(season_format(season) == "D" | season_format(season) == "D2"){
+  } else if(season_format(season) == "D" | season_format(season) == "D2" | season_format(season) == "E"){
     data <- tryCatch(page %>%
                        rvest::html_node("center table"),
                      error = function(e) NULL)
@@ -156,6 +166,8 @@ season_rounds <- function(season){
     rounds <- rvest::html_nodes(html, "b")
   } else if(season_format(season) == "D2"){
     rounds <- rvest::html_nodes(html, "td b")
+  } else if(season_format(season) == "E"){
+    rounds <- rvest::html_nodes(html, "div center td")
   }
 
   rounds %<>%
@@ -242,6 +254,7 @@ season_format <- function(season){
   else if(season == 2008) return("C")
   else if(season == 2007) return("D")
   else if(season == 2006) return("D2")
+  else if(season == 2005) return("E")
 }
 
 #' Get seasons
