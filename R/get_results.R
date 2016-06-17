@@ -182,6 +182,8 @@ season_rounds <- function(season){
     rounds <- 2:20
   } else if(season == 2008){
     rounds <- 2:16
+  } else if(season == 2004){
+    rounds <- 2:15
   }
 
   return(rounds)
@@ -254,7 +256,7 @@ season_format <- function(season){
   else if(season == 2008) return("C")
   else if(season == 2007) return("D")
   else if(season == 2006) return("D2")
-  else if(season == 2005) return("E")
+  else if(season == 2005 | season == 2004) return("E")
 }
 
 #' Get seasons
