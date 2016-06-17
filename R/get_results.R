@@ -25,7 +25,7 @@ get_round_results <- function(round, season){
       .[2:(nrow(.)-1),] %>%
       dplyr::tbl_df() %>%
       dplyr::slice(2:n())
-  } else if(season_format(season) == "E"){
+  } else if(season_format(season) == "E" | season_format(season) == "F"){
     results <- data %>%
       rvest::html_table() %>%
       as.data.frame %>%
@@ -42,7 +42,8 @@ get_round_results <- function(round, season){
      (season_format(season) == "C" & round == 2)){
     results %<>%
       dplyr::rename(Error = `EarnedBonus?`)
-  } else if(season_format(season) == "D" | season_format(season) == "D2" | season_format(season) == "E"){
+  } else if(season_format(season) == "D" | season_format(season) == "D2" |
+            season_format(season) == "E" | season_format(season) == "F"){
     results %<>%
       dplyr::rename(`No.` = X1,
                     `Speller's Name` = X2,
@@ -99,6 +100,10 @@ round_results_table <- function(round, season){
     url <- paste0("https://web.archive.org/web/20050831002454/http://www.spellingbee.com/",
                   substr(season, 3, 4), "bee/rounds/Round",
                   formatC(round, width = 2, format = "d", flag = "0"), ".htm")
+  } else if(season_format(season) == "F"){
+    url <- paste0("https://web.archive.org/web/20030810092050/http://www.spellingbee.com/",
+                  substr(season, 3, 4), "bee/rounds/Round",
+                  formatC(round, width = 2, format = "d", flag = "0"), ".shtml")
   }
   page <- xml2::read_html(url)
 
@@ -116,7 +121,8 @@ round_results_table <- function(round, season){
                        rvest::html_nodes("table") %>%
                        magrittr::extract2(5),
                      error = function(e) NULL)
-  } else if(season_format(season) == "D" | season_format(season) == "D2" | season_format(season) == "E"){
+  } else if(season_format(season) == "D" | season_format(season) == "D2" |
+            season_format(season) == "E" | season_format(season) == "F"){
     data <- tryCatch(page %>%
                        rvest::html_node("center table"),
                      error = function(e) NULL)
@@ -124,6 +130,7 @@ round_results_table <- function(round, season){
 
   return(data)
 }
+
 #' Get season rounds
 #'
 #' Get all rounds in a single competition
@@ -168,14 +175,22 @@ season_rounds <- function(season){
     rounds <- rvest::html_nodes(html, "td b")
   } else if(season_format(season) == "E"){
     rounds <- rvest::html_nodes(html, "div center td")
+  } else if(season_format(season) == "F"){
+    rounds <- rvest::html_nodes(html, "div center td")
   }
 
   rounds %<>%
     rvest::html_text() %>%
     tidyr::extract_numeric(.) %>%
-    na.omit(.) %>%
-    # remove first round because it is preliminaries - no actual results
-    setdiff(., 1)
+    na.omit(.)
+
+
+  # remove written test round because it is preliminaries - no actual results
+  if(season >= 2004){
+    rounds <- setdiff(rounds, 1)
+  } else {
+    rounds <- setdiff(rounds, 2)
+  }
 
   # correction for various seasons
   if(season == 2011){
@@ -184,6 +199,8 @@ season_rounds <- function(season){
     rounds <- 2:16
   } else if(season == 2004){
     rounds <- 2:15
+  } else if(season == 2003){
+    rounds <- c(1, 3:15)
   }
 
   return(rounds)
@@ -257,6 +274,7 @@ season_format <- function(season){
   else if(season == 2007) return("D")
   else if(season == 2006) return("D2")
   else if(season == 2005 | season == 2004) return("E")
+  else if(season == 2003) return("F")
 }
 
 #' Get seasons
